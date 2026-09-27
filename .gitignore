@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Secrets (keep the example template tracked)
+.env
+.env.*
+!.env.example
+
+# SQLite database and its journal/WAL files
+data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Test coverage
+coverage/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
