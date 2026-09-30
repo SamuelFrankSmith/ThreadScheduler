@@ -14,12 +14,17 @@ export interface Schedule {
   interval: string | null;
   /** Next time to send, epoch ms. Null once a one-shot has been sent. */
   nextRunAt: number | null;
+  /** Thread "Hide after inactivity" in minutes, or null for the channel default. */
+  hideAfterMinutes: number | null;
   createdBy: string;
   createdAt: number;
 }
 
 export type NewSchedule = Omit<Schedule, 'id' | 'createdAt'>;
-export type ScheduleUpdate = Pick<Schedule, 'channelId' | 'title' | 'message' | 'startAt' | 'interval' | 'nextRunAt'>;
+export type ScheduleUpdate = Pick<
+  Schedule,
+  'channelId' | 'title' | 'message' | 'startAt' | 'interval' | 'nextRunAt' | 'hideAfterMinutes'
+>;
 
 interface ScheduleRow {
   id: number;
@@ -30,6 +35,7 @@ interface ScheduleRow {
   start_at: number;
   interval: string | null;
   next_run_at: number | null;
+  hide_after_minutes: number | null;
   created_by: string;
   created_at: number;
 }
@@ -44,6 +50,7 @@ function toSchedule(row: ScheduleRow): Schedule {
     startAt: row.start_at,
     interval: row.interval,
     nextRunAt: row.next_run_at,
+    hideAfterMinutes: row.hide_after_minutes,
     createdBy: row.created_by,
     createdAt: row.created_at,
   };
@@ -69,6 +76,7 @@ export function openDatabase(path: string): void {
       start_at    INTEGER NOT NULL,
       interval    TEXT,
       next_run_at INTEGER,
+      hide_after_minutes INTEGER,
       created_by  TEXT    NOT NULL,
       created_at  INTEGER NOT NULL
     );
@@ -82,16 +90,34 @@ export function openDatabase(path: string): void {
     );
     CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON subscriptions(user_id);
   `);
+
+  // Databases created before the "Hide after inactivity" setting lack its column.
+  const columns = db.prepare('PRAGMA table_info(schedules)').all() as unknown as { name: string }[];
+  if (!columns.some((c) => c.name === 'hide_after_minutes')) {
+    db.exec('ALTER TABLE schedules ADD COLUMN hide_after_minutes INTEGER');
+  }
 }
 
 export function createSchedule(s: NewSchedule): Schedule {
   const createdAt = Date.now();
   const result = db
     .prepare(
-      `INSERT INTO schedules (guild_id, channel_id, title, message, start_at, interval, next_run_at, created_by, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO schedules
+         (guild_id, channel_id, title, message, start_at, interval, next_run_at, hide_after_minutes, created_by, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
-    .run(s.guildId, s.channelId, s.title, s.message, s.startAt, s.interval, s.nextRunAt, s.createdBy, createdAt);
+    .run(
+      s.guildId,
+      s.channelId,
+      s.title,
+      s.message,
+      s.startAt,
+      s.interval,
+      s.nextRunAt,
+      s.hideAfterMinutes,
+      s.createdBy,
+      createdAt,
+    );
   return { ...s, id: Number(result.lastInsertRowid), createdAt };
 }
 
@@ -110,9 +136,9 @@ export function listSchedules(guildId: string): Schedule[] {
 export function updateSchedule(id: number, u: ScheduleUpdate): void {
   db.prepare(
     `UPDATE schedules
-     SET channel_id = ?, title = ?, message = ?, start_at = ?, interval = ?, next_run_at = ?
+     SET channel_id = ?, title = ?, message = ?, start_at = ?, interval = ?, next_run_at = ?, hide_after_minutes = ?
      WHERE id = ?`,
-  ).run(u.channelId, u.title, u.message, u.startAt, u.interval, u.nextRunAt, id);
+  ).run(u.channelId, u.title, u.message, u.startAt, u.interval, u.nextRunAt, u.hideAfterMinutes, id);
 }
 
 export function deleteSchedule(id: number): void {

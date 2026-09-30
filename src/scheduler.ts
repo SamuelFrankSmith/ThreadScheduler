@@ -1,6 +1,7 @@
 import { escapeMarkdown, type Client } from 'discord.js';
 import { config } from './config.js';
 import { getDueSchedules, listSubscribers, setNextRun, type Schedule } from './db.js';
+import { isHideAfterMinutes } from './threadArchive.js';
 import { computeNextRun, parseInterval } from './time.js';
 
 const POLL_MS = 30_000;
@@ -70,7 +71,12 @@ async function runSchedule(client: Client<true>, schedule: Schedule): Promise<vo
       content: `**${escapeMarkdown(schedule.title)}**\n${schedule.message}`,
       allowedMentions: { parse: [] },
     });
-    const thread = await message.startThread({ name: schedule.title.slice(0, 100) });
+    const hideAfter = schedule.hideAfterMinutes;
+    const thread = await message.startThread({
+      name: schedule.title.slice(0, 100),
+      // Omitted when unset so the channel's own default applies.
+      ...(hideAfter !== null && isHideAfterMinutes(hideAfter) ? { autoArchiveDuration: hideAfter } : {}),
+    });
 
     const subscribers = listSubscribers(schedule.id);
     for (const { content, users } of chunkMentions(subscribers)) {

@@ -14,6 +14,7 @@ import {
 import { config } from '../config.js';
 import { SCHEDULABLE_CHANNEL_TYPES } from '../channels.js';
 import type { Schedule } from '../db.js';
+import { formatHideAfter, HIDE_AFTER_OPTIONS } from '../threadArchive.js';
 import { describeInterval, discordTimestamp, formatDateTime, formatInput, parseInterval } from '../time.js';
 import type { Draft } from './editSessions.js';
 import { ids, type EditField } from './customIds.js';
@@ -21,6 +22,19 @@ import { ids, type EditField } from './customIds.js';
 export const PAGE_SIZE = 25;
 export const TITLE_MAX = 100;
 export const MESSAGE_MAX = 1800;
+
+/** Button labels, also used in "Updated …" notices. */
+export const FIELD_LABELS: Record<EditField, string> = {
+  title: 'Title',
+  message: 'Message',
+  channel: 'Channel',
+  datetime: 'Datetime',
+  interval: 'Interval',
+  hideAfter: 'Hide after inactivity',
+};
+
+/** Select value for "use the channel's default". */
+export const HIDE_AFTER_DEFAULT = 'default';
 
 /** Payload usable for both `reply()` (with an ephemeral flag added) and `update()`. */
 export interface View {
@@ -123,6 +137,7 @@ function scheduleEmbed(
       { name: 'Subscribers', value: String(extra.subscribers), inline: true },
       { name: 'Initial datetime', value: formatWhen(fields.startAt) },
       { name: 'Repeat interval', value: formatInterval(fields.interval) },
+      { name: 'Hide after inactivity', value: formatHideAfter(fields.hideAfterMinutes) },
       { name: 'Next run', value: extra.nextRunAt ? formatWhen(extra.nextRunAt) : 'None (finished)' },
     );
 }
@@ -168,20 +183,19 @@ export function editView(
   const embed = scheduleEmbed(draft, extra, 'Editing: ').setFooter({
     text: dirty ? 'You have unsaved changes. Press Save to apply them.' : 'No changes yet.',
   });
-  const fieldButton = (field: EditField, label: string) =>
-    new ButtonBuilder().setCustomId(ids.list.field(field, scheduleId)).setLabel(label).setStyle(ButtonStyle.Primary);
+  const fieldButton = (field: EditField) =>
+    new ButtonBuilder()
+      .setCustomId(ids.list.field(field, scheduleId))
+      .setLabel(FIELD_LABELS[field])
+      .setStyle(ButtonStyle.Primary);
 
   return {
     content: notice ?? '',
     embeds: [embed],
     components: [
-      row(
-        fieldButton('title', 'Title'),
-        fieldButton('message', 'Message'),
-        fieldButton('channel', 'Channel'),
-        fieldButton('datetime', 'Datetime'),
-        fieldButton('interval', 'Interval'),
-      ),
+      // Discord allows at most 5 buttons per row.
+      row(fieldButton('title'), fieldButton('message'), fieldButton('channel')),
+      row(fieldButton('datetime'), fieldButton('interval'), fieldButton('hideAfter')),
       row(
         new ButtonBuilder()
           .setCustomId(ids.list.save(scheduleId))
@@ -271,6 +285,33 @@ export function editModal(field: EditField, scheduleId: number, draft: Draft): M
         `Leave empty to send only once. HH:mm means daily at that time (${config.timeZone}).`,
       );
     }
+    case 'hideAfter':
+      return new ModalBuilder()
+        .setCustomId(ids.list.modal(field, scheduleId))
+        .setTitle('Edit hide after inactivity')
+        .addLabelComponents(
+          new LabelBuilder()
+            .setLabel('Hide after inactivity')
+            .setDescription('How long the thread stays visible after its last message.')
+            .setStringSelectMenuComponent(
+              new StringSelectMenuBuilder()
+                .setCustomId(ids.modalInput)
+                .setMinValues(1)
+                .setMaxValues(1)
+                .addOptions(
+                  {
+                    label: 'Channel default',
+                    value: HIDE_AFTER_DEFAULT,
+                    default: draft.hideAfterMinutes === null,
+                  },
+                  ...HIDE_AFTER_OPTIONS.map((o) => ({
+                    label: o.label,
+                    value: String(o.minutes),
+                    default: draft.hideAfterMinutes === o.minutes,
+                  })),
+                ),
+            ),
+        );
     case 'channel':
       return new ModalBuilder()
         .setCustomId(ids.list.modal(field, scheduleId))

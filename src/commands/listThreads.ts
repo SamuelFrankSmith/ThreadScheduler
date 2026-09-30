@@ -10,6 +10,7 @@ import {
 } from 'discord.js';
 import { config } from '../config.js';
 import { checkChannelAccess, SCHEDULABLE_CHANNEL_TYPES } from '../channels.js';
+import { isHideAfterMinutes } from '../threadArchive.js';
 import { countSubscribers, deleteSchedule, getSchedule, listSchedules, updateSchedule, type Schedule } from '../db.js';
 import { initialNextRun, parseDateTime, parseInterval } from '../time.js';
 import { ids, isEditField, parseCustomId, type EditField } from '../ui/customIds.js';
@@ -20,6 +21,8 @@ import {
   editModal,
   editView,
   expiredView,
+  FIELD_LABELS,
+  HIDE_AFTER_DEFAULT,
   listView,
   MESSAGE_MAX,
   TITLE_MAX,
@@ -176,6 +179,18 @@ async function applyField(
     return null;
   }
 
+  if (field === 'hideAfter') {
+    const choice = interaction.fields.getStringSelectValues(ids.modalInput)[0];
+    if (choice === HIDE_AFTER_DEFAULT) {
+      draft.hideAfterMinutes = null;
+      return null;
+    }
+    const minutes = Number(choice);
+    if (!isHideAfterMinutes(minutes)) return 'Please choose one of the listed options.';
+    draft.hideAfterMinutes = minutes;
+    return null;
+  }
+
   const value = interaction.fields.getTextInputValue(ids.modalInput).trim();
   switch (field) {
     case 'title':
@@ -222,5 +237,5 @@ export async function handleListModal(interaction: ModalSubmitInteraction<'cache
   }
 
   const error = await applyField(interaction, field, session.draft);
-  await interaction.update(buildEditView(schedule, session, error ? `❌ ${error}` : `✏️ Updated ${field}.`));
+  await interaction.update(buildEditView(schedule, session, error ? `❌ ${error}` : `✏️ Updated ${FIELD_LABELS[field].toLowerCase()}.`));
 }

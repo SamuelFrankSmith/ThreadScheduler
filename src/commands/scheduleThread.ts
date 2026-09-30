@@ -2,6 +2,7 @@ import { InteractionContextType, MessageFlags, PermissionFlagsBits, SlashCommand
 import { config } from '../config.js';
 import { checkChannelAccess, SCHEDULABLE_CHANNEL_TYPES } from '../channels.js';
 import { createSchedule } from '../db.js';
+import { HIDE_AFTER_OPTIONS } from '../threadArchive.js';
 import { initialNextRun, parseDateTime, parseInterval } from '../time.js';
 import { detailView, MESSAGE_MAX, TITLE_MAX } from '../ui/views.js';
 import type { Command } from './types.js';
@@ -33,6 +34,12 @@ export const scheduleThread: Command = {
         .setName('interval')
         .setDescription('Repeat interval, e.g. 1d, 6hr, 1y, or 18:30hr for daily at 18:30')
         .setMaxLength(40),
+    )
+    .addIntegerOption((o) =>
+      o
+        .setName('hide-after-inactivity')
+        .setDescription("When the thread hides after no activity (defaults to the channel's setting)")
+        .addChoices(...HIDE_AFTER_OPTIONS.map((opt) => ({ name: opt.label, value: opt.minutes }))),
     ),
 
   async execute(interaction) {
@@ -41,6 +48,7 @@ export const scheduleThread: Command = {
     const datetimeInput = interaction.options.getString('datetime', true);
     const channel = interaction.options.getChannel('channel', true, SCHEDULABLE_CHANNEL_TYPES);
     const intervalInput = interaction.options.getString('interval')?.trim() || null;
+    const hideAfterMinutes = interaction.options.getInteger('hide-after-inactivity');
 
     const errors: string[] = [];
     if (!title) errors.push('Title cannot be empty.');
@@ -68,6 +76,7 @@ export const scheduleThread: Command = {
       startAt: startAt.value,
       interval: intervalInput,
       nextRunAt: initialNextRun(startAt.value, interval?.value ?? null, config.timeZone),
+      hideAfterMinutes,
       createdBy: interaction.user.id,
     });
 

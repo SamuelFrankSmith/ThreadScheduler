@@ -7,6 +7,7 @@ export interface Draft {
   message: string;
   startAt: number;
   interval: string | null;
+  hideAfterMinutes: number | null;
 }
 
 interface Session {
@@ -22,7 +23,14 @@ const sessions = new Map<string, Session>();
 const key = (userId: string, scheduleId: number) => `${userId}:${scheduleId}`;
 
 function toDraft(s: Schedule): Draft {
-  return { channelId: s.channelId, title: s.title, message: s.message, startAt: s.startAt, interval: s.interval };
+  return {
+    channelId: s.channelId,
+    title: s.title,
+    message: s.message,
+    startAt: s.startAt,
+    interval: s.interval,
+    hideAfterMinutes: s.hideAfterMinutes,
+  };
 }
 
 function prune(now: number): void {

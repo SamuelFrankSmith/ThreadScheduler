@@ -3,7 +3,7 @@
  * `<namespace>:<action>[:<arg>...]` and stays well under Discord's 100-char limit.
  */
 
-export const EDIT_FIELDS = ['title', 'message', 'channel', 'datetime', 'interval'] as const;
+export const EDIT_FIELDS = ['title', 'message', 'channel', 'datetime', 'interval', 'hideAfter'] as const;
 export type EditField = (typeof EDIT_FIELDS)[number];
 
 export const ids = {

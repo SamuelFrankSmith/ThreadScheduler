@@ -14,7 +14,7 @@ Schedules can be one-time or repeating. Everything is managed with slash command
 
 | Command | Who can use it | What it does |
 | --- | --- | --- |
-| `/schedule-thread` | Manage Messages | Create a schedule: `title`, `message`, `datetime`, `channel`, and an optional repeat `interval`. |
+| `/schedule-thread` | Manage Messages | Create a schedule: `title`, `message`, `datetime`, `channel`, plus optional repeat `interval` and `hide-after-inactivity`. |
 | `/list-threads` | Manage Messages | Browse schedules in a dropdown. Select one to see its details, then **Edit** or **Delete** it. |
 | `/subscribe` | Everyone | Pick one or more schedules to be tagged in. |
 | `/unsubscribe` | Everyone | Pick schedules to stop being tagged in. |
@@ -31,9 +31,13 @@ To stop the bot being used to get around channel permissions, you can only sched
 
 ### Editing a schedule
 
-In `/list-threads`, select a schedule and press **Edit**. Buttons for **Title**, **Message**, **Channel**, **Datetime**, and **Interval** each open a form. Your changes appear straight away, but nothing is saved until you press **Save changes**. **Back to list** discards your changes. You can also close the whole thing with Discord's **Dismiss message** link.
+In `/list-threads`, select a schedule and press **Edit**. Buttons for **Title**, **Message**, **Channel**, **Datetime**, **Interval**, and **Hide after inactivity** each open a form. Your changes appear straight away, but nothing is saved until you press **Save changes**. **Back to list** discards your changes. You can also close the whole thing with Discord's **Dismiss message** link.
 
 Unsaved edits expire after 15 minutes, or if the bot restarts.
+
+### Hide after inactivity
+
+This sets how long each posted thread stays in the channel's thread list after its last message: **1 hour**, **24 hours**, **3 days**, or **1 week**. It's the same setting Discord shows when you create a thread. If you don't choose one, the channel's default applies. In the edit form, choose **Channel default** to go back to it.
 
 ### Datetime and interval formats
 
