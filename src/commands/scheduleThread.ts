@@ -1,4 +1,5 @@
 import { InteractionContextType, MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
+import { config } from '../config.js';
 import { checkChannelAccess, SCHEDULABLE_CHANNEL_TYPES } from '../channels.js';
 import { createSchedule } from '../db.js';
 import { initialNextRun, parseDateTime, parseInterval } from '../time.js';
@@ -18,7 +19,7 @@ export const scheduleThread: Command = {
       o.setName('message').setDescription('Message body').setRequired(true).setMaxLength(MESSAGE_MAX),
     )
     .addStringOption((o) =>
-      o.setName('datetime').setDescription('First send time: MM/dd HH:mm (24h, UTC)').setRequired(true).setMaxLength(11),
+      o.setName('datetime').setDescription(`First send time: MM/dd HH:mm (24h, ${config.timeZone})`).setRequired(true).setMaxLength(11),
     )
     .addChannelOption((o) =>
       o
@@ -30,7 +31,7 @@ export const scheduleThread: Command = {
     .addStringOption((o) =>
       o
         .setName('interval')
-        .setDescription('Repeat interval, e.g. 1d, 6hr, 1y, or 18:30hr for daily at 18:30 UTC')
+        .setDescription('Repeat interval, e.g. 1d, 6hr, 1y, or 18:30hr for daily at 18:30')
         .setMaxLength(40),
     ),
 
@@ -45,7 +46,7 @@ export const scheduleThread: Command = {
     if (!title) errors.push('Title cannot be empty.');
     if (!message) errors.push('Message cannot be empty.');
 
-    const startAt = parseDateTime(datetimeInput);
+    const startAt = parseDateTime(datetimeInput, config.timeZone);
     if (!startAt.ok) errors.push(startAt.error);
 
     const interval = intervalInput ? parseInterval(intervalInput) : null;
@@ -66,7 +67,7 @@ export const scheduleThread: Command = {
       message,
       startAt: startAt.value,
       interval: intervalInput,
-      nextRunAt: initialNextRun(startAt.value, interval?.value ?? null),
+      nextRunAt: initialNextRun(startAt.value, interval?.value ?? null, config.timeZone),
       createdBy: interaction.user.id,
     });
 

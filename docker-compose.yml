@@ -1,12 +1,12 @@
 services:
   bot:
     build: .
+    container_name: thread-scheduler
+    # Owner of the data folder. Unraid: PUID=99, PGID=100 (nobody:users).
+    user: "${PUID:-1000}:${PGID:-1000}"
     env_file: .env
     environment:
       DB_PATH: /data/bot.db
     volumes:
-      - bot-data:/data
+      - ${DATA_DIR:-./data}:/data
     restart: unless-stopped
-
-volumes:
-  bot-data:

@@ -1,4 +1,5 @@
 import { escapeMarkdown, type Client } from 'discord.js';
+import { config } from './config.js';
 import { getDueSchedules, listSubscribers, setNextRun, type Schedule } from './db.js';
 import { computeNextRun, parseInterval } from './time.js';
 
@@ -34,7 +35,7 @@ function nextRunFor(schedule: Schedule, now: number): number | null {
     console.error(`Schedule ${schedule.id} has an invalid interval "${schedule.interval}"; disabling.`);
     return null;
   }
-  return computeNextRun(schedule.startAt, parsed.value, now);
+  return computeNextRun(schedule.startAt, parsed.value, now, config.timeZone);
 }
 
 /** Groups mentions into messages that fit Discord's length and mention limits. */

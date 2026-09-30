@@ -11,9 +11,10 @@ import {
   TextInputStyle,
   type MessageActionRowComponentBuilder,
 } from 'discord.js';
+import { config } from '../config.js';
 import { SCHEDULABLE_CHANNEL_TYPES } from '../channels.js';
 import type { Schedule } from '../db.js';
-import { describeInterval, discordTimestamp, formatInput, formatUtc, parseInterval } from '../time.js';
+import { describeInterval, discordTimestamp, formatDateTime, formatInput, parseInterval } from '../time.js';
 import type { Draft } from './editSessions.js';
 import { ids, type EditField } from './customIds.js';
 
@@ -37,11 +38,11 @@ const truncate = (text: string, max: number) => (text.length <= max ? text : `${
 export function formatInterval(interval: string | null): string {
   if (!interval) return 'None (one-time)';
   const parsed = parseInterval(interval);
-  return parsed.ok ? `\`${interval}\` (${describeInterval(parsed.value)})` : `\`${interval}\` (invalid)`;
+  return parsed.ok ? `\`${interval}\` (${describeInterval(parsed.value, config.timeZone)})` : `\`${interval}\` (invalid)`;
 }
 
 function formatWhen(ms: number): string {
-  return `${formatUtc(ms)}\n${discordTimestamp(ms)} (${discordTimestamp(ms, 'R')})`;
+  return `${formatDateTime(ms, config.timeZone)}\n${discordTimestamp(ms)} (${discordTimestamp(ms, 'R')})`;
 }
 
 // ---------- List view ----------
@@ -71,7 +72,7 @@ export function listView(
     .addOptions(
       pageItems.map((s) => {
         const channel = channelName(s.channelId);
-        const next = s.nextRunAt ? `next ${formatUtc(s.nextRunAt)}` : 'finished';
+        const next = s.nextRunAt ? `next ${formatDateTime(s.nextRunAt, config.timeZone)}` : 'finished';
         return {
           label: truncate(s.title, 100),
           value: String(s.id),
@@ -245,13 +246,14 @@ export function editModal(field: EditField, scheduleId: number, draft: Draft): M
         field,
         scheduleId,
         'Edit datetime',
-        'Datetime (MM/dd HH:mm, 24h, UTC)',
+        'Datetime (MM/dd HH:mm, 24h)',
         new TextInputBuilder()
           .setStyle(TextInputStyle.Short)
           .setMaxLength(11)
           .setRequired(true)
           .setPlaceholder('03/14 18:30')
-          .setValue(formatInput(draft.startAt)),
+          .setValue(formatInput(draft.startAt, config.timeZone)),
+        `Timezone: ${config.timeZone}`,
       );
     case 'interval': {
       const input = new TextInputBuilder()
@@ -266,7 +268,7 @@ export function editModal(field: EditField, scheduleId: number, draft: Draft): M
         'Edit repeat interval',
         'Repeat interval',
         input,
-        'Leave empty to send only once. HH:mm means daily at that time (UTC).',
+        `Leave empty to send only once. HH:mm means daily at that time (${config.timeZone}).`,
       );
     }
     case 'channel':

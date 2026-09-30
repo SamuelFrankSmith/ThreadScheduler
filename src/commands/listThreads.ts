@@ -8,6 +8,7 @@ import {
   type ModalSubmitInteraction,
   type StringSelectMenuInteraction,
 } from 'discord.js';
+import { config } from '../config.js';
 import { checkChannelAccess, SCHEDULABLE_CHANNEL_TYPES } from '../channels.js';
 import { countSubscribers, deleteSchedule, getSchedule, listSchedules, updateSchedule, type Schedule } from '../db.js';
 import { initialNextRun, parseDateTime, parseInterval } from '../time.js';
@@ -56,7 +57,7 @@ function nextRunForDraft(current: Schedule, original: Draft, draft: Draft): numb
     return current.nextRunAt;
   }
   const interval = draft.interval ? parseInterval(draft.interval) : null;
-  return initialNextRun(draft.startAt, interval?.ok ? interval.value : null);
+  return initialNextRun(draft.startAt, interval?.ok ? interval.value : null, config.timeZone);
 }
 
 function buildEditView(schedule: Schedule, session: { original: Draft; draft: Draft }, notice?: string): View {
@@ -186,7 +187,7 @@ async function applyField(
       draft.message = value.slice(0, MESSAGE_MAX);
       return null;
     case 'datetime': {
-      const parsed = parseDateTime(value);
+      const parsed = parseDateTime(value, config.timeZone);
       if (!parsed.ok) return parsed.error;
       draft.startAt = parsed.value;
       return null;

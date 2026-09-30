@@ -15,7 +15,7 @@ const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 client.once(Events.ClientReady, async (ready) => {
   console.log(`Logged in as ${ready.user.tag}`);
   try {
-    await deployCommands();
+    await deployCommands([...ready.guilds.cache.keys()]);
   } catch (err) {
     console.error('Failed to register commands:', err);
   }
