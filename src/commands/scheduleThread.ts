@@ -52,7 +52,7 @@ export const scheduleThread: Command = {
     const interval = intervalInput ? parseInterval(intervalInput) : null;
     if (interval && !interval.ok) errors.push(interval.error);
 
-    const accessError = await checkChannelAccess(interaction.guild, channel.id);
+    const accessError = await checkChannelAccess(interaction.guild, channel.id, interaction.member);
     if (accessError) errors.push(accessError);
 
     if (errors.length > 0 || !startAt.ok || (interval && !interval.ok)) {

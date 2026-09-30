@@ -145,12 +145,12 @@ export async function handleListComponent(
         return;
       }
       const { draft, original } = session;
-      if (draft.channelId !== original.channelId) {
-        const accessError = await checkChannelAccess(guild, draft.channelId);
-        if (accessError) {
-          await interaction.update(buildEditView(schedule, session, `❌ ${accessError}`));
-          return;
-        }
+      // Checked on every save, not only channel changes: editing the text of a post to a
+      // channel you can't post in would bypass channel permissions just the same.
+      const accessError = await checkChannelAccess(guild, draft.channelId, interaction.member);
+      if (accessError) {
+        await interaction.update(buildEditView(schedule, session, `❌ ${accessError}`));
+        return;
       }
       updateSchedule(schedule.id, { ...draft, nextRunAt: nextRunForDraft(schedule, original, draft) });
       endEditSession(user.id, schedule.id);
@@ -170,7 +170,7 @@ async function applyField(
   if (field === 'channel') {
     const channel = interaction.fields.getSelectedChannels(ids.modalInput, true, SCHEDULABLE_CHANNEL_TYPES).first();
     if (!channel) return 'Please select a channel.';
-    const accessError = await checkChannelAccess(interaction.guild, channel.id);
+    const accessError = await checkChannelAccess(interaction.guild, channel.id, interaction.member);
     if (accessError) return accessError;
     draft.channelId = channel.id;
     return null;

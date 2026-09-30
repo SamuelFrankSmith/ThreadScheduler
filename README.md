@@ -21,6 +21,14 @@ Schedules can be one-time or repeating. Everything is managed with slash command
 
 Server admins can change who can use each command under **Server Settings → Integrations → Thread Scheduler**.
 
+### Channel permissions
+
+To stop the bot being used to get around channel permissions, you can only schedule posts in channels where you could post yourself (View Channel and Send Messages). Administrators and the server owner always pass this check.
+
+- The check runs when a schedule is created and **every time one is saved**, even if you only changed the message text. So you can't edit a schedule that posts to a channel you can't post in.
+- It doesn't run again when the schedule posts. If the creator later loses access or leaves the server, the schedule keeps posting until someone deletes it.
+- Some servers want moderators to post in a locked channel (such as #announcements) only through the bot. They can turn the check off with `ENFORCE_CHANNEL_PERMISSIONS=false`.
+
 ### Editing a schedule
 
 In `/list-threads`, select a schedule and press **Edit**. Buttons for **Title**, **Message**, **Channel**, **Datetime**, and **Interval** each open a form. Your changes appear straight away, but nothing is saved until you press **Save changes**. **Back to list** discards your changes. You can also close the whole thing with Discord's **Dismiss message** link.
@@ -101,6 +109,7 @@ All settings go in `.env`.
 | `DISCORD_CLIENT_ID` | Yes | | Application ID. |
 | `GUILD_ID` | No | | Register commands to one server only, so they show up instantly. Without it, commands work in every server the bot is in but can take up to an hour to appear. To get a server's ID, turn on **Developer Mode** (User Settings → Advanced), then right-click the server icon and choose **Copy Server ID**. |
 | `TZ` | No | `UTC` | [IANA timezone](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) used for entering, displaying, and repeating schedules, e.g. `America/New_York`. |
+| `ENFORCE_CHANNEL_PERMISSIONS` | No | `true` | Only let users schedule posts in channels where they can post themselves. See [Channel permissions](#channel-permissions). |
 | `PUID` / `PGID` | No | `1000` | User and group ID the container runs as. They must be able to write to `DATA_DIR`. |
 | `DATA_DIR` | No | `./data` | Folder on the host where the database is stored. |
 | `DB_PATH` | No | `./data/bot.db` | Database file path. Only used when running without Docker; Compose sets it for you. |
